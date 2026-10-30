@@ -1,14 +1,20 @@
 """Smoke-suite configuration loaded from the real developer environment."""
 
-from __future__ import annotations
-
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from config.provider_catalog import PROVIDER_CATALOG, SUPPORTED_PROVIDER_IDS
-from config.settings import Settings, get_settings
+from free_claude_code.config.api_keys import api_key_values, normalize_api_keys
+from free_claude_code.config.loader import clear_settings_cache, get_settings
+from free_claude_code.config.model_refs import parse_model_name, parse_provider_type
+from free_claude_code.config.provider_catalog import (
+    PROVIDER_CATALOG,
+    SUPPORTED_PROVIDER_IDS,
+    ProviderAuthKind,
+)
+from free_claude_code.config.settings import Settings
+from free_claude_code.providers.runtime.config import has_provider_configuration
 
 DEFAULT_TARGETS = frozenset(
     {
@@ -28,7 +34,9 @@ DEFAULT_TARGETS = frozenset(
     }
 )
 SIDE_EFFECT_TARGETS = frozenset({"discord", "telegram", "voice"})
-OPT_IN_TARGETS = frozenset({"nvidia_nim_cli", "openrouter_free_cli"})
+OPT_IN_TARGETS = frozenset(
+    {"nvidia_nim_cli", "nvidia_nim_vision", "openrouter_free_cli"}
+)
 ALL_TARGETS = DEFAULT_TARGETS | SIDE_EFFECT_TARGETS | OPT_IN_TARGETS
 TARGET_ALIASES = {
     "contract": "api",
@@ -42,36 +50,76 @@ TARGET_ALIASES = {
 SECRET_KEY_PARTS = ("KEY", "TOKEN", "SECRET", "WEBHOOK", "AUTH")
 
 PROVIDER_SMOKE_DEFAULT_MODELS: dict[str, str] = {
-    "nvidia_nim": "nvidia_nim/nvidia/nemotron-3-super-120b-a12b",
-    "open_router": "open_router/moonshotai/kimi-k2.6:free",
+    "nvidia_nim": "nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b",
+    "azure_openai": "azure_openai/gpt-5.1",
+    "open_router": "open_router/nvidia/nemotron-3-super-120b-a12b:free",
     "mistral": "mistral/devstral-small-latest",
     "mistral_codestral": "mistral_codestral/codestral-latest",
     "deepseek": "deepseek/deepseek-v4-pro",
+    "ollama_cloud": "ollama_cloud/qwen3-coder:480b",
     "lmstudio": "lmstudio/local-model",
     "llamacpp": "llamacpp/local-model",
     "ollama": "ollama/llama3.1",
+    "kimi_code": "kimi_code/k3",
     "wafer": "wafer/DeepSeek-V4-Pro",
-    "opencode": "opencode/gpt-5.3-codex",
+    "minimax": "minimax/MiniMax-M3",
+    "opencode_zen": "opencode_zen/gpt-5.3-codex",
     "opencode_go": "opencode_go/minimax-m2.7",
-    "zai": "zai/glm-5.1",
+    "vercel": "vercel/openai/gpt-5.5",
+    "bedrock": "bedrock/openai.gpt-oss-120b",
+    "huggingface": "huggingface/openai/gpt-oss-120b:fastest",
+    "cohere": "cohere/command-a-plus-05-2026",
+    "zai": "zai/glm-5.2",
+    "zai_api": "zai_api/glm-4.7-flash",
     "gemini": "gemini/models/gemini-3.1-flash-lite",
-    "groq": "groq/llama-3.3-70b-versatile",
+    "vertex": "vertex/google/gemini-3.5-flash",
+    "groq": "groq/openai/gpt-oss-20b",
+    "cline_pass": "cline_pass/cline-pass/deepseek-v4-flash",
+    "xai": "xai/grok-4.5",
+    "alibaba_cloud": "alibaba_cloud/qwen3-coder-plus",
+    "qwencloud": "qwencloud/qwen3.7-plus",
+    "qwencloud_coding": "qwencloud_coding/qwen3.7-plus",
+    "together": "together/zai-org/GLM-5.2",
+    "deepinfra": "deepinfra/deepseek-ai/DeepSeek-V4-Flash",
+    "siliconflow": "siliconflow/Qwen/Qwen3-32B",
+    "nebius": "nebius/Qwen/Qwen3-30B-A3B",
+    "scaleway": "scaleway/deepseek/deepseek-v4-flash",
+    "opper": "opper/claude-sonnet-4-6",
+    "chutes": "chutes/Qwen/Qwen3-32B-TEE",
+    "featherless": "featherless/Qwen/Qwen3-32B",
+    "sambanova": "sambanova/Meta-Llama-3.3-70B-Instruct",
+    "kilo": "kilo/kilo-auto/free",
     "cerebras": "cerebras/llama3.1-8b",
+    "novita": "novita/deepseek/deepseek-v4-flash-0731",
+    "cloudflare": "cloudflare/@cf/moonshotai/kimi-k2.6",
+    "tokenrouter": "tokenrouter/moonshotai/kimi-k3-free",
+    "nararoute": "nararoute/kimi-k3-free",
+    "poolside": "poolside/poolside/laguna-s-2.1",
+    "llm7": "llm7/default",
+    "lightning": "lightning/lightning-ai/Qwen3.8-27B",
+    "experiential": "experiential/union-alpha",
+    "cheaperinference": "cheaperinference/gpt-5.4-mini",
+    "orcarouter": "orcarouter/deepseek/deepseek-v4-flash-free",
+    "atlascloud": "atlascloud/deepseek-ai/deepseek-v4-flash",
+    "xkiro": "xkiro/qwen/qwen3.7-flash:free",
+    "agnes": "agnes/agnes-2.0-flash",
+    "zenmux": "zenmux/deepseek/deepseek-v4-flash-free",
+    "wandb": "wandb/openai/gpt-oss-20b",
 }
+MISTRAL_REASONING_SMOKE_DEFAULT_MODEL = "mistral/mistral-medium-3-5"
+MISTRAL_CACHE_SMOKE_DEFAULT_MODEL = "mistral/mistral-large-latest"
 
 NVIDIA_NIM_CLI_DEFAULT_MODELS: tuple[str, ...] = (
-    "z-ai/glm-5.1",
-    "moonshotai/kimi-k2.6",
-    "minimaxai/minimax-m2.7",
-    "nvidia/nemotron-3-super-120b-a12b",
-    "deepseek-ai/deepseek-v4-pro",
-    "deepseek-ai/deepseek-v4-flash",
+    "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "moonshotai/kimi-k3",
+    "minimaxai/minimax-m3.1-flash",
+    "nvidia/nemotron-3-ultra-550b-a55b",
 )
 
 OPENROUTER_FREE_CLI_DEFAULT_MODELS: tuple[str, ...] = (
     "nvidia/nemotron-3-super-120b-a12b:free",
-    "openai/gpt-oss-120b:free",
-    "poolside/laguna-m.1:free",
+    "poolside/laguna-s-2.1:free",
+    "poolside/laguna-xs-2.1:free",
 )
 
 
@@ -92,6 +140,10 @@ TARGET_REQUIRED_ENV: dict[str, tuple[str, ...]] = {
     "nvidia_nim_cli": (
         "NVIDIA_NIM_API_KEY",
         "FCC_SMOKE_CLAUDE_BIN or claude on PATH",
+    ),
+    "nvidia_nim_vision": (
+        "NVIDIA_NIM_API_KEY",
+        "FCC_SMOKE_MODEL_NVIDIA_NIM_VISION",
     ),
     "openrouter_free_cli": (
         "OPENROUTER_API_KEY",
@@ -117,7 +169,7 @@ class ProviderModel:
 
     @property
     def model_name(self) -> str:
-        return Settings.parse_model_name(self.full_model)
+        return parse_model_name(self.full_model)
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,7 +189,7 @@ class SmokeConfig:
     @classmethod
     def load(cls) -> SmokeConfig:
         root = Path(__file__).resolve().parents[2]
-        get_settings.cache_clear()
+        clear_settings_cache()
         settings = get_settings()
         return cls(
             root=root,
@@ -159,6 +211,7 @@ class SmokeConfig:
     def provider_models(self) -> list[ProviderModel]:
         candidates = (
             ("MODEL", self.settings.model),
+            ("MODEL_FABLE", self.settings.model_fable),
             ("MODEL_OPUS", self.settings.model_opus),
             ("MODEL_SONNET", self.settings.model_sonnet),
             ("MODEL_HAIKU", self.settings.model_haiku),
@@ -168,7 +221,7 @@ class SmokeConfig:
         for source, model in candidates:
             if not model or model in seen:
                 continue
-            provider = Settings.parse_provider_type(model)
+            provider = parse_provider_type(model)
             if self.provider_matrix and provider not in self.provider_matrix:
                 continue
             if not self.has_provider_configuration(provider):
@@ -203,6 +256,18 @@ class SmokeConfig:
             for full_model, source in nvidia_nim_cli_model_refs().items()
         ]
 
+    def nvidia_nim_vision_model(self) -> ProviderModel | None:
+        """Return only an explicitly selected NVIDIA NIM vision model."""
+        override_env = "FCC_SMOKE_MODEL_NVIDIA_NIM_VISION"
+        override = os.getenv(override_env)
+        if override is None:
+            return None
+        return ProviderModel(
+            provider="nvidia_nim",
+            full_model=_normalize_provider_model("nvidia_nim", override),
+            source=override_env,
+        )
+
     def openrouter_free_cli_models(self) -> list[ProviderModel]:
         """Return OpenRouter free models for Claude Code CLI characterization."""
         return [
@@ -210,11 +275,41 @@ class SmokeConfig:
             for full_model, source in openrouter_free_cli_model_refs().items()
         ]
 
+    def mistral_reasoning_smoke_model(self) -> ProviderModel | None:
+        """Return a Mistral model expected to accept native reasoning input."""
+        if self.provider_matrix and "mistral" not in self.provider_matrix:
+            return None
+        if not self.has_provider_configuration("mistral"):
+            return None
+        override_env = "FCC_SMOKE_MODEL_MISTRAL_REASONING"
+        if override := os.getenv(override_env):
+            full_model = _normalize_provider_model("mistral", override)
+            source = override_env
+        else:
+            full_model = MISTRAL_REASONING_SMOKE_DEFAULT_MODEL
+            source = "mistral_reasoning_default"
+        return ProviderModel(provider="mistral", full_model=full_model, source=source)
+
+    def mistral_cache_smoke_model(self) -> ProviderModel | None:
+        """Return a Mistral model expected to report prompt-cache reads."""
+        if self.provider_matrix and "mistral" not in self.provider_matrix:
+            return None
+        if not self.has_provider_configuration("mistral"):
+            return None
+        override_env = "FCC_SMOKE_MODEL_MISTRAL_CACHE"
+        if override := os.getenv(override_env):
+            full_model = _normalize_provider_model("mistral", override)
+            source = override_env
+        else:
+            full_model = MISTRAL_CACHE_SMOKE_DEFAULT_MODEL
+            source = "mistral_cache_default"
+        return ProviderModel(provider="mistral", full_model=full_model, source=source)
+
     def _include_provider_in_smoke(
         self, provider: str, mapped_providers: set[str]
     ) -> bool:
         descriptor = PROVIDER_CATALOG[provider]
-        if "local" not in descriptor.capabilities:
+        if not descriptor.local:
             return True
         if provider in mapped_providers:
             return True
@@ -223,41 +318,12 @@ class SmokeConfig:
         return bool(os.getenv(f"FCC_SMOKE_MODEL_{provider.upper()}"))
 
     def has_provider_configuration(self, provider: str) -> bool:
-        if provider == "nvidia_nim":
-            return bool(self.settings.nvidia_nim_api_key.strip())
-        if provider == "open_router":
-            return bool(self.settings.open_router_api_key.strip())
-        if provider == "mistral":
-            return bool(self.settings.mistral_api_key.strip())
-        if provider == "mistral_codestral":
-            return bool(self.settings.codestral_api_key.strip())
-        if provider == "deepseek":
-            return bool(self.settings.deepseek_api_key.strip())
-        if provider == "kimi":
-            return bool(self.settings.kimi_api_key.strip())
-        if provider == "lmstudio":
-            return bool(self.settings.lm_studio_base_url.strip())
-        if provider == "llamacpp":
-            return bool(self.settings.llamacpp_base_url.strip())
-        if provider == "ollama":
-            return bool(self.settings.ollama_base_url.strip())
-        if provider == "wafer":
-            return bool(self.settings.wafer_api_key.strip())
-        if provider == "fireworks":
-            return bool(self.settings.fireworks_api_key.strip())
-        if provider == "opencode":
-            return bool(self.settings.opencode_api_key.strip())
-        if provider == "opencode_go":
-            return bool(self.settings.opencode_api_key.strip())
-        if provider == "zai":
-            return bool(self.settings.zai_api_key.strip())
-        if provider == "gemini":
-            return bool(self.settings.gemini_api_key.strip())
-        if provider == "groq":
-            return bool(self.settings.groq_api_key.strip())
-        if provider == "cerebras":
-            return bool(self.settings.cerebras_api_key.strip())
-        return False
+        descriptor = PROVIDER_CATALOG.get(provider)
+        if descriptor is None:
+            return False
+        if descriptor.auth_kind is ProviderAuthKind.CONNECTED_ACCOUNT:
+            return bool(os.getenv(f"FCC_SMOKE_MODEL_{provider.upper()}"))
+        return has_provider_configuration(descriptor, self.settings)
 
 
 def _parse_csv(raw: str | None) -> frozenset[str]:
@@ -298,17 +364,8 @@ def _normalize_provider_model(provider: str, raw_model: str) -> str:
     if not model:
         msg = f"FCC_SMOKE_MODEL_{provider.upper()} must not be empty"
         raise ValueError(msg)
-    if "/" not in model:
-        return f"{provider}/{model}"
-    prefix = Settings.parse_provider_type(model)
-    if prefix == provider:
+    if "/" in model and parse_provider_type(model) == provider:
         return model
-    if prefix in SUPPORTED_PROVIDER_IDS:
-        msg = (
-            f"FCC_SMOKE_MODEL_{provider.upper()} must use provider prefix "
-            f"{provider!r}, got {model!r}"
-        )
-        raise ValueError(msg)
     return f"{provider}/{model}"
 
 
@@ -378,13 +435,13 @@ def openrouter_free_cli_model_refs(
 
 def auth_headers(token: str | None = None) -> dict[str, str]:
     settings = get_settings()
-    resolved = token if token is not None else settings.anthropic_auth_token
+    resolved = token if token is not None else settings.proxy_auth_token
     headers = {
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
     }
     if resolved:
-        headers["x-api-key"] = resolved
+        headers["authorization"] = f"Bearer {resolved}"
     return headers
 
 
@@ -394,10 +451,27 @@ def redacted(value: str, env: Mapping[str, str] | None = None) -> str:
         return value
 
     source = env if env is not None else os.environ
-    result = value
+    credential_keys = {
+        descriptor.credential_env
+        for descriptor in PROVIDER_CATALOG.values()
+        if descriptor.credential_env
+    }
+    replacements: dict[str, str] = {}
     for key, secret in source.items():
         if not secret or len(secret) < 4:
             continue
         if any(part in key.upper() for part in SECRET_KEY_PARTS):
-            result = result.replace(secret, f"<redacted:{key}>")
+            marker = f"<redacted:{key}>"
+            replacements.setdefault(secret, marker)
+            if key in credential_keys:
+                try:
+                    entries = api_key_values(normalize_api_keys(secret))
+                except ValueError:
+                    continue  # Error reporting still masks the complete raw value.
+                for entry in entries:
+                    if len(entry) >= 4:
+                        replacements.setdefault(entry, marker)
+    result = value
+    for secret in sorted(replacements, key=len, reverse=True):
+        result = result.replace(secret, replacements[secret])
     return result

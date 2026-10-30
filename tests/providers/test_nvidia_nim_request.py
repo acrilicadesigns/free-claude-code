@@ -1,23 +1,32 @@
-"""Tests for providers/nvidia_nim/request.py."""
+"""Tests for NVIDIA NIM request policy helpers."""
 
+import re
 from copy import deepcopy
-from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 
-from config.nim import NimSettings
-from core.anthropic import set_if_not_none
-from providers.nvidia_nim.request import (
-    NIM_TOOL_ARGUMENT_ALIASES_KEY,
+from free_claude_code.config.constants import ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS
+from free_claude_code.core.anthropic import set_if_not_none
+from free_claude_code.core.anthropic.models import MessagesRequest, Tool
+from free_claude_code.core.reasoning import ReasoningEffort, ReasoningPolicy
+from free_claude_code.providers.nvidia_nim.request_options import (
     _set_extra,
-    body_without_nim_tool_argument_aliases,
-    build_request_body,
+)
+from free_claude_code.providers.nvidia_nim.request_options import (
+    build_nim_request_body as build_request_body,
+)
+from free_claude_code.providers.nvidia_nim.retry import (
     clone_body_without_chat_template,
     clone_body_without_reasoning_content,
+)
+from free_claude_code.providers.nvidia_nim.tool_schema import (
+    NIM_TOOL_ARGUMENT_ALIASES_KEY,
+    body_without_nim_tool_argument_aliases,
     nim_tool_argument_aliases_from_body,
 )
+from tests.providers.request_factory import make_messages_request
+from tests.providers.support import REASONING_OFF, REASONING_ON
 
 GREP_SCHEMA_FROM_SERVER_LOG: dict[str, Any] = {
     "type": "object",
@@ -42,20 +51,20 @@ GREP_SCHEMA_FROM_SERVER_LOG: dict[str, Any] = {
 
 
 @pytest.fixture
-def req():
-    r = MagicMock()
-    r.model = "test"
-    r.messages = [MagicMock(role="user", content="hi")]
-    r.max_tokens = 100
-    r.system = None
-    r.temperature = None
-    r.top_p = None
-    r.stop_sequences = None
-    r.tools = None
-    r.tool_choice = None
-    r.extra_body = None
-    r.top_k = None
-    return r
+def req() -> MessagesRequest:
+    return make_messages_request(
+        model="test",
+        messages=[{"role": "user", "content": "hi"}],
+        max_tokens=100,
+        system=None,
+        temperature=None,
+        top_p=None,
+        stop_sequences=None,
+        tools=None,
+        extra_body=None,
+        top_k=None,
+        thinking=None,
+    )
 
 
 class TestSetIfNotNone:
@@ -93,25 +102,113 @@ class TestSetExtra:
 
 
 class TestBuildRequestBody:
-    def test_max_tokens_capped_by_nim(self, req):
-        req.max_tokens = 100000
-        nim = NimSettings(max_tokens=4096)
-        body = build_request_body(req, nim, thinking_enabled=True)
-        assert body["max_tokens"] == 4096
+    def test_absent_sampling_defaults_are_not_injected(self, req):
+        body = build_request_body(req, reasoning=REASONING_OFF)
 
-    def test_presence_penalty_included_when_nonzero(self, req):
-        nim = NimSettings(presence_penalty=0.5)
-        body = build_request_body(req, nim, thinking_enabled=True)
-        assert body["presence_penalty"] == 0.5
+        assert "temperature" not in body
+        assert "top_p" not in body
+        assert "parallel_tool_calls" not in body
+        assert "extra_body" not in body
+
+    def test_explicit_sampling_and_extras_survive(self, req):
+        req.temperature = 0.3
+        req.top_p = 1.0
+        req.top_k = 15
+        req.extra_body = {"top_k": 20, "ignore_eos": True, "seed": 7}
+        original = deepcopy(req.model_dump())
+
+        body = build_request_body(req, reasoning=REASONING_OFF)
+
+        assert body["temperature"] == 0.3
+        assert body["top_p"] == 1.0
+        assert body["extra_body"] == req.extra_body
+        assert req.model_dump() == original
+
+    @pytest.mark.parametrize("keep_custom", (False, True))
+    def test_reasoning_extras_are_cleaned_without_mutating_request(
+        self, req, keep_custom
+    ):
+        template_kwargs: dict[str, Any] = {"thinking": True, "reasoning_budget": 100}
+        if keep_custom:
+            template_kwargs["custom"] = "value"
+        req.extra_body = {
+            "reasoning_budget": 99,
+            "chat_template_kwargs": template_kwargs,
+        }
+        if keep_custom:
+            req.extra_body["ignore_eos"] = True
+        original = deepcopy(req.model_dump())
+
+        body = build_request_body(req, reasoning=REASONING_OFF)
+
+        if keep_custom:
+            assert body["extra_body"] == {
+                "chat_template_kwargs": {"custom": "value"},
+                "ignore_eos": True,
+            }
+        else:
+            assert "extra_body" not in body
+        assert req.model_dump() == original
+
+    @pytest.mark.parametrize("effort", list(ReasoningEffort))
+    def test_named_effort_passes_through(self, req, effort):
+        body = build_request_body(req, reasoning=ReasoningPolicy(effort=effort))
+        assert body["reasoning_effort"] == effort.value
+        assert "chat_template_kwargs" not in body.get("extra_body", {})
+
+    def test_named_effort_replaces_client_reasoning_budgets(self):
+        req = make_messages_request(
+            model="test",
+            thinking=None,
+            extra_body={
+                "reasoning_budget": 99,
+                "chat_template_kwargs": {
+                    "reasoning_budget": 100,
+                    "custom": "value",
+                },
+            },
+        )
+
+        body = build_request_body(
+            req,
+            reasoning=ReasoningPolicy(effort=ReasoningEffort.HIGH),
+        )
+
+        extra_body = body["extra_body"]
+        assert "reasoning_budget" not in extra_body
+        assert body["reasoning_effort"] == "high"
+        assert extra_body["chat_template_kwargs"] == {"custom": "value"}
+
+    @pytest.mark.parametrize(
+        ("requested", "expected"),
+        [
+            (None, ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS),
+            (100, 100),
+            (
+                ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS + 1,
+                ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS,
+            ),
+        ],
+    )
+    def test_max_tokens_preserves_fcc_output_limit(self, req, requested, expected):
+        req.max_tokens = requested
+        body = build_request_body(req, reasoning=REASONING_ON)
+        assert body["max_tokens"] == expected
+
+    @pytest.mark.parametrize("client_top_p", (None, 0.0, 0.5, 0.95, 1.0))
+    def test_top_p_preserves_client_value_or_omission(self, req, client_top_p):
+        req.top_p = client_top_p
+
+        body = build_request_body(req, reasoning=REASONING_ON)
+
+        if client_top_p is None:
+            assert "top_p" not in body
+        else:
+            assert body["top_p"] == client_top_p
 
     def test_include_stop_str_in_output_not_sent(self, req):
-        body = build_request_body(req, NimSettings(), thinking_enabled=True)
+        body = build_request_body(req, reasoning=REASONING_ON)
         assert "include_stop_str_in_output" not in body.get("extra_body", {})
-
-    def test_parallel_tool_calls_included(self, req):
-        nim = NimSettings(parallel_tool_calls=False)
-        body = build_request_body(req, nim, thinking_enabled=True)
-        assert body["parallel_tool_calls"] is False
 
     def test_tool_schema_boolean_subschemas_are_removed_without_mutating_request(
         self, req
@@ -128,14 +225,14 @@ class TestBuildRequestBody:
             "required": ["query"],
         }
         req.tools = [
-            SimpleNamespace(
+            Tool(
                 name="search",
                 description="search",
                 input_schema=tool_schema,
             )
         ]
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
 
         parameters = body["tools"][0]["function"]["parameters"]
         properties = parameters["properties"]
@@ -156,14 +253,14 @@ class TestBuildRequestBody:
         tool_schema["required"] = ["pattern", "-A", "_fcc_arg_type"]
         original_schema = deepcopy(tool_schema)
         req.tools = [
-            SimpleNamespace(
+            Tool(
                 name="Grep",
                 description="Search file contents",
                 input_schema=tool_schema,
             )
         ]
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
 
         parameters = body["tools"][0]["function"]["parameters"]
         properties = parameters["properties"]
@@ -191,6 +288,41 @@ class TestBuildRequestBody:
         assert "_fcc_arg_type" in parameters["required"]
         assert tool_schema == original_schema
 
+    def test_reported_long_tool_name_uses_generic_alias_after_nim_repairs(self, req):
+        """Issue #1307's 52nd tool is portable without losing NIM arg aliases."""
+        long_name = "mcp__issue_1307__" + "x" * 85
+        assert len(long_name) == 102
+        tools = [
+            Tool(name=f"tool_{index}", input_schema={"type": "object"})
+            for index in range(51)
+        ]
+        tools.append(
+            Tool(
+                name=long_name,
+                input_schema={
+                    "type": "object",
+                    "properties": {"type": {"type": "string"}},
+                    "required": ["type"],
+                },
+            )
+        )
+        req.tools = tools
+        snapshot = req.model_dump()
+
+        body = build_request_body(req, reasoning=REASONING_OFF)
+
+        wire_name = body["tools"][51]["function"]["name"]
+        assert wire_name != long_name
+        assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", wire_name)
+        assert body[NIM_TOOL_ARGUMENT_ALIASES_KEY] == {
+            long_name: {"_fcc_arg_type": "type"}
+        }
+        assert (
+            NIM_TOOL_ARGUMENT_ALIASES_KEY
+            not in body_without_nim_tool_argument_aliases(body)
+        )
+        assert req.model_dump() == snapshot
+
     def test_safe_tool_schema_does_not_add_alias_metadata(self, req):
         tool_schema = {
             "type": "object",
@@ -202,14 +334,14 @@ class TestBuildRequestBody:
             "required": ["pattern"],
         }
         req.tools = [
-            SimpleNamespace(
+            Tool(
                 name="Glob",
                 description="Find files",
                 input_schema=tool_schema,
             )
         ]
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
 
         assert NIM_TOOL_ARGUMENT_ALIASES_KEY not in body
         parameters = body["tools"][0]["function"]["parameters"]
@@ -235,14 +367,14 @@ class TestBuildRequestBody:
         }
         original_schema = deepcopy(tool_schema)
         req.tools = [
-            SimpleNamespace(
+            Tool(
                 name="NotionLike",
                 description="Nested type schema",
                 input_schema=tool_schema,
             )
         ]
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
 
         aliases = body[NIM_TOOL_ARGUMENT_ALIASES_KEY]["NotionLike"]
         parent = body["tools"][0]["function"]["parameters"]["properties"]["parent"]
@@ -270,29 +402,46 @@ class TestBuildRequestBody:
             "Grep": {"_fcc_arg_A": "-A"}
         }
 
-    def test_reasoning_params_in_extra_body(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [MagicMock(role="user", content="hi")]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+    def test_reasoning_uses_named_effort(self):
+        req = make_messages_request(
+            model="test",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        nim = NimSettings()
-        body = build_request_body(req, nim, thinking_enabled=True)
-        extra = body["extra_body"]
-        assert extra["chat_template_kwargs"] == {
-            "thinking": True,
-            "enable_thinking": True,
-            "reasoning_budget": body["max_tokens"],
-        }
+        body = build_request_body(req, reasoning=REASONING_ON)
+        extra = body.get("extra_body", {})
+        assert body["reasoning_effort"] == "high"
+        assert "chat_template_kwargs" not in extra
         assert "reasoning_budget" not in extra
+
+    def test_canonicalization_removes_empty_client_reasoning_envelope(self):
+        req = make_messages_request(
+            model="test",
+            extra_body={
+                "chat_template_kwargs": {
+                    "thinking": True,
+                    "enable_thinking": True,
+                    "reasoning_budget": 100,
+                }
+            },
+        )
+
+        body = build_request_body(
+            req,
+            reasoning=ReasoningPolicy.provider_default(),
+        )
+
+        assert "chat_template_kwargs" not in body.get("extra_body", {})
 
     def test_clone_body_without_chat_template(self):
         body = {
@@ -312,97 +461,127 @@ class TestBuildRequestBody:
 
         assert cloned is not None
         assert "chat_template" not in cloned["extra_body"]
-        assert cloned["extra_body"]["chat_template_kwargs"] == {
+        assert "chat_template_kwargs" not in cloned["extra_body"]
+        assert cloned["extra_body"]["ignore_eos"] is False
+        assert body["extra_body"]["chat_template"] == "custom_template"
+        assert body["extra_body"]["chat_template_kwargs"] == {
             "thinking": True,
             "enable_thinking": True,
             "reasoning_budget": 100,
         }
+
+    def test_clone_body_without_chat_template_kwargs_only(self):
+        body = {
+            "model": "test",
+            "extra_body": {
+                "chat_template_kwargs": {
+                    "thinking": True,
+                    "enable_thinking": True,
+                    "reasoning_budget": 100,
+                },
+                "ignore_eos": False,
+            },
+        }
+
+        cloned = clone_body_without_chat_template(body)
+
+        assert cloned is not None
+        assert "chat_template" not in cloned["extra_body"]
+        assert "chat_template_kwargs" not in cloned["extra_body"]
         assert cloned["extra_body"]["ignore_eos"] is False
-        assert body["extra_body"]["chat_template"] == "custom_template"
+
+    def test_clone_body_without_chat_template_returns_none_when_unchanged(self):
+        body = {"model": "test", "extra_body": {"ignore_eos": False}}
+
+        assert clone_body_without_chat_template(body) is None
 
     def test_no_chat_template_kwargs_when_thinking_disabled(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [MagicMock(role="user", content="hi")]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+        req = make_messages_request(
+            model="test",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        nim = NimSettings()
-        body = build_request_body(req, nim, thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
         extra = body.get("extra_body", {})
+        assert body["reasoning_effort"] == "none"
         assert "chat_template_kwargs" not in extra
         assert "reasoning_budget" not in extra
 
-    def test_reasoning_budget_respects_existing_chat_template_kwargs(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [MagicMock(role="user", content="hi")]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.top_k = None
-        req.extra_body = {
-            "chat_template_kwargs": {"enable_thinking": False, "custom": "value"}
-        }
+    def test_named_effort_preserves_unrelated_chat_template_kwargs(self):
+        req = make_messages_request(
+            model="test",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            top_k=None,
+            extra_body={
+                "chat_template_kwargs": {
+                    "enable_thinking": False,
+                    "custom": "value",
+                }
+            },
+            thinking=None,
+        )
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=True)
-        assert body["extra_body"]["chat_template_kwargs"] == {
-            "enable_thinking": False,
-            "custom": "value",
-            "reasoning_budget": body["max_tokens"],
-        }
+        body = build_request_body(req, reasoning=REASONING_ON)
+        assert body["reasoning_effort"] == "high"
+        assert body["extra_body"]["chat_template_kwargs"] == {"custom": "value"}
 
-    def test_chat_template_fields_present_for_mistral_model(self):
-        req = MagicMock()
-        req.model = "mistralai/mixtral-8x7b-instruct-v0.1"
-        req.messages = [MagicMock(role="user", content="hi")]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+    def test_explicit_chat_template_is_preserved(self):
+        req = make_messages_request(
+            model="mistralai/mixtral-8x7b-instruct-v0.1",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        nim = NimSettings(chat_template="custom_template")
-        body = build_request_body(req, nim, thinking_enabled=True)
+        req.extra_body = {"chat_template": "custom_template"}
+        body = build_request_body(req, reasoning=REASONING_ON)
         extra = body.get("extra_body", {})
-        assert extra["chat_template_kwargs"] == {
-            "thinking": True,
-            "enable_thinking": True,
-            "reasoning_budget": body["max_tokens"],
-        }
+        assert body["reasoning_effort"] == "high"
+        assert "chat_template_kwargs" not in extra
         assert extra["chat_template"] == "custom_template"
 
     def test_no_reasoning_params_in_extra_body(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [MagicMock(role="user", content="hi")]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+        req = make_messages_request(
+            model="test",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        nim = NimSettings()
-        body = build_request_body(req, nim, thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
         extra = body.get("extra_body", {})
         for param in (
             "thinking",
@@ -412,57 +591,74 @@ class TestBuildRequestBody:
             "reasoning_effort",
         ):
             assert param not in extra
+        assert body["reasoning_effort"] == "none"
+        assert "chat_template_kwargs" not in extra
+
+    def test_budget_only_request_uses_enabled_named_effort(self):
+        req = make_messages_request(model="test", thinking=None)
+
+        body = build_request_body(
+            req,
+            reasoning=ReasoningPolicy.on(budget_tokens=321),
+        )
+
+        assert body["reasoning_effort"] == "high"
+        assert "chat_template_kwargs" not in body.get("extra_body", {})
+        assert "reasoning_budget" not in body.get("extra_body", {})
 
     def test_assistant_thinking_blocks_removed_when_disabled(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [
-            MagicMock(
-                role="assistant",
-                content=[
-                    MagicMock(type="thinking", thinking="secret"),
-                    MagicMock(type="text", text="answer"),
-                ],
-            )
-        ]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+        req = make_messages_request(
+            model="test",
+            messages=[
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "thinking", "thinking": "secret"},
+                        {"type": "text", "text": "answer"},
+                    ],
+                }
+            ],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=False)
+        body = build_request_body(req, reasoning=REASONING_OFF)
         assert "<think>" not in body["messages"][0]["content"]
         assert "answer" in body["messages"][0]["content"]
 
     def test_assistant_thinking_replayed_as_reasoning_content_when_enabled(self):
-        req = MagicMock()
-        req.model = "test"
-        req.messages = [
-            MagicMock(
-                role="assistant",
-                content=[
-                    MagicMock(type="thinking", thinking="secret"),
-                    MagicMock(type="text", text="answer"),
-                ],
-                reasoning_content=None,
-            )
-        ]
-        req.max_tokens = 100
-        req.system = None
-        req.temperature = None
-        req.top_p = None
-        req.stop_sequences = None
-        req.tools = None
-        req.tool_choice = None
-        req.extra_body = None
-        req.top_k = None
+        req = make_messages_request(
+            model="test",
+            messages=[
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "thinking", "thinking": "secret"},
+                        {"type": "text", "text": "answer"},
+                    ],
+                }
+            ],
+            max_tokens=100,
+            system=None,
+            temperature=None,
+            top_p=None,
+            stop_sequences=None,
+            tools=None,
+            tool_choice=None,
+            extra_body=None,
+            top_k=None,
+            thinking=None,
+        )
 
-        body = build_request_body(req, NimSettings(), thinking_enabled=True)
+        body = build_request_body(req, reasoning=REASONING_ON)
         assistant = body["messages"][0]
         assert assistant["reasoning_content"] == "secret"
         assert assistant["content"] == "answer"

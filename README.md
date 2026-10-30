@@ -1,523 +1,552 @@
 <div align="center">
 
-# 🤖 Free Claude Code
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="assets/free-claude-code-wordmark-light.svg">
+    <img src="assets/free-claude-code-wordmark-dark.svg" alt="Free Claude Code" width="610">
+  </picture>
+</h1>
 
-Use Claude Code CLI, VS Code, JetBrains ACP, or chat bots through your own Anthropic-compatible proxy.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-2e7d32.svg?style=for-the-badge)](https://github.com/Alishahryar1/free-claude-code/blob/main/LICENSE)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-3776ab.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=for-the-badge)](https://github.com/astral-sh/uv)
-[![Tested with Pytest](https://img.shields.io/badge/testing-Pytest-00c0ff.svg?style=for-the-badge)](https://github.com/Alishahryar1/free-claude-code/actions/workflows/tests.yml)
-[![Type checking: Ty](https://img.shields.io/badge/type%20checking-ty-ffcc00.svg?style=for-the-badge)](https://pypi.org/project/ty/)
-[![Code style: Ruff](https://img.shields.io/badge/code%20formatting-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
-[![Logging: Loguru](https://img.shields.io/badge/logging-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
+[![Package Manager: uv](assets/package-manager-uv.svg)](https://github.com/astral-sh/uv)
+[![Testing: Pytest](https://img.shields.io/badge/Testing-Pytest-ad1457.svg?style=for-the-badge)](https://github.com/Alishahryar1/free-claude-code/actions/workflows/tests.yml)
+[![Type Checker: Ty](https://img.shields.io/badge/Type%20Checker-ty-fdd835.svg?style=for-the-badge)](https://pypi.org/project/ty/)
+[![Formatter: Ruff](https://img.shields.io/badge/Formatter-ruff-bf4b00.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
+[![Logging: Loguru](https://img.shields.io/badge/logging-loguru-00695c.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
 
-Free Claude Code routes Anthropic Messages API traffic from Claude Code to any provider. It keeps Claude Code's client-side protocol stable while letting you choose free, paid, or local models.
-
-[Quick Start](#quick-start) · [Providers](#choose-a-provider) · [Clients](#connect-claude-code) · [Integrations](#optional-integrations) · [Development](#development)
+[Quick Start](#quick-start) · [Providers](#choose-a-provider) · [Clients](#connect-your-client) · [Integrations](#optional-integrations) · [Manage](#manage-your-installation)
 
 </div>
 
-<div align="center">
-  <img src="assets/pic.png" alt="Free Claude Code in action" width="700">
-</div>
-
-<a id="model-picker"></a>
-
-<div align="center">
-  <img src="assets/cc-model-picker.png" alt="Claude Code model picker showing gateway models" width="700">
-</div>
-
-## Star History
-
-<div align="center">
-  <a href="https://star-history.com/#Alishahryar1/free-claude-code&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Alishahryar1/free-claude-code&type=Date&theme=dark">
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Alishahryar1/free-claude-code&type=Date">
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Alishahryar1/free-claude-code&type=Date" width="700">
-    </picture>
-  </a>
-</div>
+<p align="center">
+  <em>Independent open-source project. Not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic.</em>
+</p>
 
 ## What You Get
 
-- Drop-in proxy for Claude Code's Anthropic API calls.
-- 17 provider backends: NVIDIA NIM, OpenRouter, Google AI Studio (Gemini), DeepSeek, Mistral La Plateforme, Mistral Codestral, OpenCode Zen, OpenCode Go, Wafer, Kimi, Cerebras Inference, Groq, Fireworks AI, Z.ai, LM Studio, llama.cpp, and Ollama.
-- Per-model routing: send Opus, Sonnet, Haiku, and fallback traffic to different providers.
-- Native Claude Code `/model` picker support through the proxy's `/v1/models` endpoint (see [Model Picker](#model-picker)).
-- Streaming, tool use, reasoning/thinking block handling, and local request optimizations.
-- Optional Discord or Telegram bot wrapper for remote coding sessions.
-- Optional Usage through the VSCode extension.
-- Optional voice-note transcription through local Whisper or NVIDIA NIM.
-- Local **Admin UI** at `/admin` to edit supported proxy settings, validate changes, and check providers (loopback access only).
+- **61 ToS-friendly providers. 1.3B+ free tokens every month.** Use free, paid, subscription, and local models from one searchable UI without putting your account at risk. FCC follows provider terms and removes integrations if they stop being allowed.
+- **12 coding agents. One model catalog.** Run [Claude Code](https://code.claude.com/docs/en/overview), [Codex](https://github.com/openai/codex), [Pi](https://github.com/earendil-works/pi), [OpenCode](https://github.com/anomalyco/opencode), [Cline](https://github.com/cline/cline), [Hermes](https://github.com/NousResearch/hermes-agent), [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), [Grok Build](https://github.com/xai-org/grok-build), [Muse Code](https://research.meta.ai/blog/introducing-muse-code-and-muse-spark-1-2/), [Aider](https://aider.chat/), [Antigravity CLI](https://antigravity.google/docs/getting-started/), or [VS Code Chat](https://code.visualstudio.com/) with your FCC models.
+- **Keep coding through provider outages.** After retries are exhausted, FCC automatically tries your next configured model without making you restart the turn. This works across every client.
+- **Up to 90% lower token usage.** Optional [RTK](https://github.com/rtk-ai/rtk) filters common command output, and [Headroom](https://github.com/headroomlabs-ai/headroom) compresses tool results.
+- **Native Code sessions in your browser.** Choose a folder and run Codex in the browser with real-time and background support. Freely switch providers/models in the same session. Support for switching harnesses in the same session coming soon!
+- **Terminal, desktop, IDE, or phone.** Work through native launchers, [VS Code](https://code.visualstudio.com/), [Codex App](https://learn.chatgpt.com/docs/app), [JetBrains](https://www.jetbrains.com/), [Discord](https://discord.com/), or [Telegram](https://telegram.org/).
+- **Voice notes in. Code out.** Talk to your agent using local [Whisper](https://github.com/openai/whisper) or [NVIDIA NIM](https://docs.nvidia.com/nim/speech/latest/asr/deploy-asr-models/whisper.html) transcription.
+- **Agent capabilities stay intact.** Stream responses, use tools, preserve native interleaved thinking for maximum performance, send images, and route [Fable](https://www.anthropic.com/claude/fable), [Opus](https://www.anthropic.com/claude/opus), [Sonnet](https://www.anthropic.com/claude/sonnet), and [Haiku](https://www.anthropic.com/claude/haiku) independently with compatible models.
+
+Free-tier availability and limits are controlled by each provider and may change.
+
+<div align="center">
+  <img src="assets/pic.png" alt="Claude Code running with Free Claude Code" width="700">
+  <p><em>Claude Code running with FCC.</em></p>
+</div>
+
+<div align="center">
+  <img src="assets/browser-code-session.png" alt="Native Codex browser session in FCC, showing model controls and a repository exploration" width="700">
+  <p><em>A native Codex session in FCC's browser UI.</em></p>
+</div>
 
 ## Quick Start
 
-### 1. Install/Update The Proxy
+<a id="install"></a>
+
+### 1. Install
 
 macOS/Linux:
 
 ```bash
-curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh
+curl -fsSL "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.sh" | sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1?raw=1" | iex
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.ps1")))
 ```
 
-Review the installers at [scripts/install.sh](https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh) and [scripts/install.ps1](https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1). Re-run these commands to update to the latest version.
+When prompted, choose at least one coding agent and optionally enable [RTK](https://github.com/rtk-ai/rtk) + [Headroom](https://github.com/headroomlabs-ai/headroom) token optimization for supported agents.
 
-### 2. Start The Proxy
+### 2. Start FCC
+
+#### Windows
+
+Open **Free Claude Code** from your desktop or Start menu.
+
+#### macOS
+
+Open **Free Claude Code** from your desktop or Applications folder.
+
+#### Linux
+
+Run:
 
 ```bash
 fcc-server
 ```
 
-After startup, Uvicorn prints the proxy bind address and the app logs the admin URL:
+FCC opens the Admin UI after starting. On Windows and macOS, use the tray or
+menu-bar icon to open Admin, restart, or quit. When using `fcc-server`, keep its
+terminal open.
 
-```text
-INFO:     Admin UI: http://127.0.0.1:8082/admin (local-only)
-```
+<a id="nvidia-nim-provider"></a>
 
-Many terminals make these clickable. Use your configured `PORT` if it is not `8082`.
+### 3. Configure NVIDIA NIM
 
-### 3. Open The Admin UI And Configure NVIDIA NIM
+1. Create an API key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys).
+2. Open the Admin UI URL from the server log.
+3. Open NVIDIA NIM in **Providers**, click **Add key**, paste the key, and click **Save**.
+4. Leave `MODEL` on the default `nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b`, or search the model dropdown and select another model.
+5. Click **Apply** to save your model selection.
 
-Open the **Admin UI** URL from the terminal output.
-
-Need an NVIDIA NIM API key? Use the **[NVIDIA NIM provider](#nvidia-nim-provider)** section below, then scroll back up here.
+To protect the local proxy with a bearer token, enable **Proxy Authentication**
+in Admin.
 
 <div align="center">
-  <img src="assets/admin-page.png" alt="Local admin UI for proxy settings" width="700">
+  <img src="assets/admin-page.png" alt="Free Claude Code Admin UI" width="700">
 </div>
 
-Paste your NVIDIA NIM API key into `NVIDIA_NIM_API_KEY`, then click **Validate** and **Apply**.
+### 4. Run Your Coding Agent
 
-The default model is already set to `nvidia_nim/nvidia/nemotron-3-super-120b-a12b`. You can change it later from the same Admin UI.
-
-### 4. Run Claude Code
+Claude Code:
 
 ```bash
 fcc-claude
 ```
 
-`fcc-claude` reads the current configured port and auth token each time it starts, sets the Claude Code environment variables (including a 190k-token `CLAUDE_CODE_AUTO_COMPACT_WINDOW` for auto-compaction), and then launches the real `claude` command.
+Codex:
+
+```bash
+fcc-codex
+```
+
+Pi:
+
+```bash
+fcc-pi
+```
+
+OpenCode 2:
+
+```bash
+fcc-opencode
+```
+
+Cline:
+
+```bash
+fcc-cline
+```
+
+Hermes:
+
+```bash
+fcc-hermes
+```
+
+DeepSeek Harness Web:
+
+```bash
+fcc-dsh
+```
+
+Grok Build:
+
+```bash
+fcc-grok
+```
+
+Muse Code:
+
+```bash
+fcc-muse
+```
+
+Aider:
+
+```bash
+fcc-aider
+```
+
+Antigravity CLI (connect on the Integrations page first):
+
+```bash
+fcc-agy
+```
+
+<a id="model-picker"></a>
+
+<div align="center">
+  <img src="assets/cc-model-picker.png" alt="Claude Code model picker showing FCC models" width="700">
+  <p><em>Select an FCC model from Claude Code's native <code>/model</code> picker.</em></p>
+</div>
 
 ## Choose A Provider
 
-Pick one provider, enter its key or local URL in the Admin UI, and set `MODEL` to a provider-prefixed model slug. `MODEL` is the fallback. `MODEL_OPUS`, `MODEL_SONNET`, and `MODEL_HAIKU` can override routing for Claude Code's model tiers.
-
-<a id="nvidia-nim-provider"></a>
-
-### 1. [NVIDIA NIM](https://build.nvidia.com/)
-
-Get a key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys).
-
-In the Admin UI, paste it into `NVIDIA_NIM_API_KEY`. The default `MODEL` is `nvidia_nim/nvidia/nemotron-3-super-120b-a12b`.
-
-Popular examples:
-
-- `nvidia_nim/nvidia/nemotron-3-super-120b-a12b`
-- `nvidia_nim/z-ai/glm5.1`
-- `nvidia_nim/moonshotai/kimi-k2.5`
-- `nvidia_nim/minimaxai/minimax-m2.5`
-
-Browse models at [build.nvidia.com](https://build.nvidia.com/explore/discover).
-
-### 2. [OpenRouter](https://openrouter.ai/)
-
-Get a key at [openrouter.ai/keys](https://openrouter.ai/keys).
-
-In the Admin UI, paste it into `OPENROUTER_API_KEY`, then set `MODEL` to an OpenRouter slug such as `open_router/openrouter/free`.
-
-Browse [all models](https://openrouter.ai/models) or [free models](https://openrouter.ai/collections/free-models).
-
-### 3. [Google AI Studio (Gemini)](https://aistudio.google.com/)
-
-Get a Gemini API key at [Google AI Studio](https://aistudio.google.com/apikey) (see Google's [Gemini OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai) docs).
-
-In the Admin UI, paste it into `GEMINI_API_KEY`, then set `MODEL` to a Gemini model slug such as `gemini/models/gemini-3.1-flash-lite`.
-
-The Gemini API exposes an OpenAI-compatible endpoint at `https://generativelanguage.googleapis.com/v1beta/openai/`. Free tier quotas are per-model; prompts may be used to improve Google's products outside the UK/CH/EEA/EU unless your account region says otherwise—see Google's terms.
-
-Popular examples:
-
-- `gemini/models/gemini-3.1-flash-lite`
-
-### 4. [DeepSeek](https://platform.deepseek.com/)
-
-Get a key at [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys).
-
-In the Admin UI, paste it into `DEEPSEEK_API_KEY`, then set `MODEL` to a DeepSeek slug such as `deepseek/deepseek-chat`.
-
-This provider uses DeepSeek's Anthropic-compatible endpoint, not the OpenAI chat-completions endpoint.
-
-### 5. [Mistral La Plateforme](https://console.mistral.ai/)
-
-[Mistral](https://mistral.ai) hosts an OpenAI-compatible Chat Completions API at `https://api.mistral.ai/v1`. Activate the **Experiment** plan on [console.mistral.ai](https://console.mistral.ai/) for free-tier API access with rate limits (upgrade for higher quotas).
-
-In the Admin UI, paste your API key into `MISTRAL_API_KEY`, then set `MODEL` to a Mistral model slug such as `mistral/devstral-small-latest` or `mistral/mistral-small-latest`.
-
-Popular examples:
-
-- `mistral/devstral-small-latest`
-- `mistral/mistral-small-latest`
-
-Browse models at [Mistral documentation](https://docs.mistral.ai/).
-
-### 6. [Mistral Codestral](https://console.mistral.ai/)
-
-Mistral's **Codestral** gateway uses a **separate API key** from La Plateforme: provision `CODESTRAL_API_KEY`, then route with the `mistral_codestral/` prefix. The default upstream is **`https://codestral.mistral.ai/v1`** (OpenAI-compatible Chat Completions; same request shaping as the `mistral` provider). See Mistral's [coding / FIM domains](https://docs.mistral.ai/mistral-vibe/using-fim-api); the curated [free LLM API list](https://github.com/cheahjs/free-llm-api-resources#mistral-codestral) summarizes typical Codestral access terms.
-
-Popular examples:
-
-- `mistral_codestral/codestral-latest`
-
-### 7. [OpenCode Zen](https://opencode.ai/)
-
-Get an API key at [opencode.ai/auth](https://opencode.ai/auth).
-
-In the Admin UI, paste it into `OPENCODE_API_KEY`, then set `MODEL` to an OpenCode Zen model slug such as `opencode/gpt-5.3-codex`. The same `OPENCODE_API_KEY` powers **OpenCode Go** (below); use `opencode_go/` slugs there.
-
-OpenCode Zen is a curated model gateway that provides access to models from Anthropic, OpenAI, Google, DeepSeek, and more through a single API key and OpenAI-compatible endpoint at `https://opencode.ai/zen/v1`.
-
-Popular examples:
-
-- `opencode/gpt-5.3-codex`
-- `opencode/claude-sonnet-4`
-- `opencode/deepseek-v4-flash-free` (free)
-- `opencode/gemini-3-flash`
-- `opencode/big-pickle` (free)
-- `opencode/glm-5.1`
-
-Browse available models at [opencode.ai](https://opencode.ai).
-
-### 8. [OpenCode Go](https://opencode.ai/)
-
-Get an API key at [opencode.ai/auth](https://opencode.ai/auth) (same as OpenCode Zen).
-
-In the Admin UI, use `OPENCODE_API_KEY`, then set `MODEL` to an OpenCode Go model slug such as `opencode_go/minimax-m2.7`.
-
-OpenCode Go is a subscription gateway with its own curated catalog and OpenAI-compatible endpoint at `https://opencode.ai/zen/go/v1`. It shares the **same OpenCode API key** as Zen; only the slug prefix (`opencode_go/` vs `opencode/`) and upstream path differ.
-
-Popular examples:
-
-- `opencode_go/minimax-m2.7`
-
-Browse available models at [opencode.ai](https://opencode.ai).
-
-### 9. [Wafer](https://wafer.ai/)
-
-Get a key from [wafer.ai](https://wafer.ai). In the Admin UI, paste it into `WAFER_API_KEY`, then set `MODEL` to a Wafer Pass model such as `wafer/DeepSeek-V4-Pro`.
-
-Popular examples:
-
-- `wafer/DeepSeek-V4-Pro`
-- `wafer/MiniMax-M2.7`
-- `wafer/Qwen3.5-397B-A17B`
-- `wafer/GLM-5.1`
-
-This provider uses Wafer's Anthropic-compatible endpoint at `https://pass.wafer.ai/v1/messages`.
-
-### 10. [Kimi](https://platform.moonshot.ai/)
-
-Get a key at [platform.moonshot.ai/console/api-keys](https://platform.moonshot.ai/console/api-keys).
-
-In the Admin UI, paste it into `KIMI_API_KEY`, then set `MODEL` to a Kimi slug such as `kimi/kimi-k2.5`.
-
-This provider calls Kimi's **Anthropic-compatible** Messages API (`https://api.moonshot.ai/anthropic/v1/messages`; model discovery uses OpenAI-compat `GET https://api.moonshot.ai/v1/models`). It is **not** the OpenAI Chat Completions path.
-
-Browse models at [platform.moonshot.ai](https://platform.moonshot.ai).
-
-### 11. [Cerebras Inference](https://inference-docs.cerebras.ai/quickstart)
-
-Sign up and create an API key in the [Cerebras Cloud Console](https://cloud.cerebras.ai) (see [Quickstart](https://inference-docs.cerebras.ai/quickstart)).
-
-In the Admin UI, set `CEREBRAS_API_KEY`, then route with `MODEL` such as `cerebras/llama3.1-8b` or `cerebras/gpt-oss-120b` (ids from [List models](https://inference-docs.cerebras.ai/api-reference/models/list-models)).
-
-Cerebras exposes an OpenAI-compatible API at `https://api.cerebras.ai/v1` ([OpenAI compatibility](https://inference-docs.cerebras.ai/resources/openai)). Non-standard request fields should go in `extra_body` when using the OpenAI client; see the same page. For reasoning models and parameters, see [Reasoning](https://inference-docs.cerebras.ai/capabilities/reasoning). This proxy follows other OpenAI-compat adapters for thinking via `reasoning_content` when Claude-style thinking is enabled.
-
-### 12. [Groq](https://console.groq.com/)
-
-Get an API key at [console.groq.com/keys](https://console.groq.com/keys).
-
-In the Admin UI, paste it into `GROQ_API_KEY`, then set `MODEL` to a Groq OpenAI-compat model slug such as `groq/llama-3.3-70b-versatile`.
-
-Groq routes through `https://api.groq.com/openai/v1` ([OpenAI-compatible Chat Completions](https://console.groq.com/docs/openai)). Some request fields yield HTTP 400; this adapter strips known-unsupported shapes (documented in Groq's compatibility notes).
-
-Reasoning-heavy models expose extra knobs documented under [Groq reasoning](https://console.groq.com/docs/reasoning). This release mirrors other OpenAI-compat adapters for thinking via `reasoning_content` deltas when Claude-style thinking is enabled; you can tune advanced parameters through request `extra_body` when needed.
-
-Browse models at [console.groq.com/docs/models](https://console.groq.com/docs/models).
-
-### 13. [Fireworks AI](https://fireworks.ai/)
-
-Get an API key at [fireworks.ai/account/api-keys](https://fireworks.ai/account/api-keys).
-
-In the Admin UI, paste it into `FIREWORKS_API_KEY`, then set `MODEL` to a Fireworks model slug such as `fireworks/accounts/fireworks/models/llama-v3p3-70b-instruct`.
-
-Fireworks exposes an **Anthropic-compatible** Messages API at `https://api.fireworks.ai/inference/v1/messages` (same inference host as before; Chat Completions is not used here). Vendor-specific JSON keys can still be merged from request `extra_body` when allowed.
-
-Browse models at [fireworks.ai/models](https://fireworks.ai/models).
-
-### 14. [Z.ai](https://z.ai/)
-
-Get an API key at [Z.ai/manage-apikey/apikey-list](https://z.ai/manage-apikey/apikey-list).
-
-In the Admin UI, paste it into `ZAI_API_KEY`, then set `MODEL` to a Z.ai model slug such as `zai/glm-5.1`.
-
-This provider calls Z.ai's **Anthropic-compatible** Messages API (`https://api.z.ai/api/anthropic/v1/messages`). The former OpenAI Coding Plan base (`https://api.z.ai/api/coding/paas/v4`) is **not** used by this gateway.
-
-Popular examples:
-
-- `zai/glm-5.1`
-- `zai/glm-5-turbo`
-
-Browse models at [Z.ai](https://z.ai).
-
-### 15. [LM Studio](https://lmstudio.ai/)
-
-Start LM Studio's local server and load a model. In the Admin UI, keep or update `LM_STUDIO_BASE_URL`, then set `MODEL` to the model identifier shown by LM Studio, prefixed with `lmstudio/`.
-
-Prefer models with tool-use support for Claude Code workflows.
-
-### 16. [llama.cpp](https://github.com/ggml-org/llama.cpp)
-
-Start `llama-server` with an Anthropic-compatible `/v1/messages` endpoint and enough context for Claude Code requests.
-
-In the Admin UI, keep or update `LLAMACPP_BASE_URL`, then set `MODEL` to the local model slug, prefixed with `llamacpp/`.
-
-For local coding models, context size matters. If llama.cpp returns HTTP 400 for normal Claude Code requests, increase `--ctx-size` and verify the model/server build supports the requested features.
-
-### 17. [Ollama](https://ollama.com/)
-
-Run Ollama and pull a model:
+1. Open a provider link below for its key, models, or setup instructions.
+2. In the Admin UI, configure the listed setting. For OpenAI / ChatGPT
+   subscription access, use **Providers → OAuth providers** instead.
+3. Search the `MODEL` dropdown and select a model. If the provider cannot list
+   models, enter `<provider-id>/<exact-provider-model-id>` manually.
+4. Click **Apply**.
+
+Optional: add an ordered **Fallback Models** list under **Model Config**. It
+applies to every connected client. A failed request may reach and consume usage
+from more than one provider before succeeding.
+
+Provider modals support numbered API keys. Use **Add key**, remove rows, or drag their handles to reorder them. FCC uses key 1.
+
+For another API endpoint, open **Providers → Custom providers → Add provider**. Enter its API base URL, optional keys, and API format. Leave **Model IDs** empty to discover models automatically, or enter one upstream model ID per line. Save, then select a model in **Model Config**.
+
+<details>
+<summary><strong>Provider catalog</strong></summary>
+
+| Provider | Admin UI setting | Example `MODEL` |
+| --- | --- | --- |
+| [NVIDIA NIM](https://build.nvidia.com/settings/api-keys) | `NVIDIA_NIM_API_KEY` | `nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b` |
+| [OpenRouter](https://openrouter.ai/keys) | `OPENROUTER_API_KEY` | `open_router/openrouter/free` |
+| [Groq](https://console.groq.com/keys) | `GROQ_API_KEY` | `groq/llama-3.3-70b-versatile` |
+| [ClinePass](https://docs.cline.bot/getting-started/clinepass) | `CLINE_API_KEY` | `cline_pass/cline-pass/kimi-k3` |
+| [OpenAI / ChatGPT](https://learn.chatgpt.com/docs/auth) | Connect ChatGPT in the Admin UI | `openai/<model-id>` |
+| [OpenAI API](https://platform.openai.com/api-keys) | `OPENAI_API_KEY` | `openai_api/gpt-5.6-sol` |
+| [GitHub Copilot](https://docs.github.com/en/copilot/how-tos/copilot-sdk/auth/authenticate) | Connect GitHub Copilot in the Admin UI | `github_copilot/<model-id>` |
+| [xAI (Grok)](https://console.x.ai/team/default/api-keys) | `XAI_API_KEY` | `xai/grok-4.5` |
+| [Alibaba Cloud](https://www.alibabacloud.com/help/en/model-studio/get-api-key) | `ALIBABA_CLOUD_API_KEY` | `alibaba_cloud/<model-id>` |
+| [QwenCloud Token Plan](https://home.qwencloud.com/api-keys) | `QWENCLOUD_API_KEY` | `qwencloud/qwen3.7-plus` |
+| [QwenCloud Coding Plan](https://home.qwencloud.com/api-keys) | `QWENCLOUD_CODING_API_KEY` | `qwencloud_coding/qwen3.7-plus` |
+| [Together AI](https://api.together.ai/settings/api-keys) | `TOGETHER_API_KEY` | `together/zai-org/GLM-5.2` |
+| [DeepInfra](https://deepinfra.com/dash/api_keys) | `DEEPINFRA_API_KEY` | `deepinfra/deepseek-ai/DeepSeek-V4-Flash` |
+| [SiliconFlow](https://cloud.siliconflow.com/account/ak) | `SILICONFLOW_API_KEY` | `siliconflow/Qwen/Qwen3-32B` |
+| [Nebius Token Factory](https://tokenfactory.nebius.com/project/api-keys) | `NEBIUS_API_KEY` | `nebius/Qwen/Qwen3-30B-A3B` |
+| [Chutes](https://chutes.ai/docs/getting-started/authentication) | `CHUTES_API_KEY` | `chutes/Qwen/Qwen3-32B-TEE` |
+| [Featherless AI](https://featherless.ai/account/api-keys) | `FEATHERLESS_API_KEY` | `featherless/Qwen/Qwen3-32B` |
+| [Agnes AI](https://agnes-ai.com/) | `AGNES_API_KEY` | `agnes/agnes-2.0-flash` |
+| [ZenMux](https://zenmux.ai/platform/pay-as-you-go) | `ZENMUX_API_KEY` | `zenmux/deepseek/deepseek-v4-flash-free` |
+| [W&B Inference](https://wandb.ai/settings) | `WANDB_API_KEY` | `wandb/openai/gpt-oss-20b` |
+| [Anthropic](https://platform.claude.com/settings/keys) | `ANTHROPIC_API_KEY` | `anthropic/<model-id>` |
+| [Azure OpenAI](https://learn.microsoft.com/azure/foundry/openai/how-to/chatgpt) | `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL` | `azure_openai/<deployment-name>` |
+| [Google AI Studio (Gemini)](https://aistudio.google.com/apikey) | `GEMINI_API_KEY` | `gemini/models/gemini-3.1-flash-lite` |
+| [Google Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/start/openai) | `VERTEX_PROJECT_ID` + ADC | `vertex/google/gemini-3.5-flash` |
+| [DeepSeek](https://platform.deepseek.com/api_keys) | `DEEPSEEK_API_KEY` | `deepseek/deepseek-chat` |
+| [Mistral La Plateforme](https://console.mistral.ai/) | `MISTRAL_API_KEY` | `mistral/devstral-small-latest` |
+| [Mistral Codestral](https://console.mistral.ai/) | `CODESTRAL_API_KEY` | `mistral_codestral/codestral-latest` |
+| [OpenCode Zen](https://opencode.ai/auth) | `OPENCODE_API_KEY` | `opencode_zen/gpt-5.3-codex` |
+| [OpenCode Go](https://opencode.ai/auth) | `OPENCODE_API_KEY` | `opencode_go/minimax-m2.7` |
+| [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/models-and-providers) | `AI_GATEWAY_API_KEY` | `vercel/openai/gpt-5.5` |
+| [Amazon Bedrock](https://console.aws.amazon.com/bedrock/) | `AWS_BEARER_TOKEN_BEDROCK` | `bedrock/openai.gpt-oss-120b` |
+| [Hugging Face Inference Providers](https://huggingface.co/settings/tokens) | `HUGGINGFACE_API_KEY` | `huggingface/Qwen/Qwen3-Coder-480B-A35B-Instruct:fastest` |
+| [Cohere](https://dashboard.cohere.com/api-keys) | `COHERE_API_KEY` | `cohere/command-a-plus-05-2026` |
+| [Wafer](https://wafer.ai/) | `WAFER_API_KEY` | `wafer/DeepSeek-V4-Pro` |
+| [Kimi API](https://platform.moonshot.ai/console/api-keys) | `KIMI_API_KEY` | `kimi/kimi-k2.5` |
+| [Kimi Code](https://www.kimi.com/code/console) | `KIMI_CODE_API_KEY` | `kimi_code/k3` |
+| [MiniMax](https://platform.minimax.io/user-center/basic-information/interface-key) | `MINIMAX_API_KEY` | `minimax/MiniMax-M3` |
+| [Cerebras Inference](https://cloud.cerebras.ai/) | `CEREBRAS_API_KEY` | `cerebras/gpt-oss-120b` |
+| [SambaNova](https://cloud.sambanova.ai/apis) | `SAMBANOVA_API_KEY` | `sambanova/Meta-Llama-3.3-70B-Instruct` |
+| [Kilo.ai](https://kilo.ai) | `KILO_API_KEY` | `kilo/kilo-auto/free` |
+| [Fireworks AI](https://fireworks.ai/account/api-keys) | `FIREWORKS_API_KEY` | `fireworks/accounts/fireworks/models/llama-v3p3-70b-instruct` |
+| [Novita AI](https://novita.ai/settings/key-management) | `NOVITA_API_KEY` | `novita/deepseek/deepseek-v4-flash-0731` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` | `cloudflare/@cf/moonshotai/kimi-k2.6` |
+| [Z.ai Coding Plan](https://z.ai/manage-apikey/apikey-list) | `ZAI_API_KEY` | `zai/glm-5.2` |
+| [Z.ai API (pay as you go)](https://z.ai/manage-apikey/apikey-list) | `ZAI_API_KEY` | `zai_api/glm-4.7-flash` |
+| [TokenRouter](https://www.tokenrouter.com/) | `TOKENROUTER_API_KEY` | `tokenrouter/moonshotai/kimi-k3-free` |
+| [NaraRoute](https://router.bynara.id/) | `NARAROUTE_API_KEY` | `nararoute/kimi-k3-free` |
+| [Poolside AI](https://platform.poolside.ai/) | `POOLSIDE_API_KEY` | `poolside/poolside/laguna-s-2.1` |
+| [LLM7.io](https://dash.llm7.io/) | `LLM7_API_KEY` | `llm7/default` |
+| [Scaleway](https://console.scaleway.com/iam/api-keys) | `SCW_SECRET_KEY` | `scaleway/deepseek/deepseek-v4-flash` |
+| [Lightning AI](https://lightning.ai/) | `LIGHTNING_API_KEY` | `lightning/lightning-ai/Qwen3.8-27B` |
+| [Experiential Labs](https://platform.experientiallabs.ai/) | `EXPLABS_API_KEY` | `experiential/union-alpha` |
+| [Cheaper Inference](https://cheaperinference.com/signup) | `CHEAPER_INFERENCE_API_KEY` | `cheaperinference/gpt-5.4-mini` |
+| [OrcaRouter](https://www.orcarouter.ai/) | `ORCAROUTER_API_KEY` | `orcarouter/deepseek/deepseek-v4-flash-free` |
+| [Atlas Cloud](https://console.atlascloud.ai/api-keys) | `ATLASCLOUD_API_KEY` | `atlascloud/deepseek-ai/deepseek-v4-flash` |
+| [xKiro](https://xkiro.com/) | `XKIRO_API_KEY` | `xkiro/qwen/qwen3.7-flash:free` |
+| [Opper](https://platform.opper.ai/) | `OPPER_API_KEY` | `opper/claude-sonnet-4-6` |
+| [Ollama Cloud](https://ollama.com/settings/keys) | `OLLAMA_API_KEY` | `ollama_cloud/qwen3-coder:480b` |
+| [LM Studio](https://lmstudio.ai/) | `LM_STUDIO_BASE_URL` | `lmstudio/<model-id>` |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | `LLAMACPP_BASE_URL` | `llamacpp/<model-id>` |
+| [Ollama](https://ollama.com/) | `OLLAMA_BASE_URL` | `ollama/<model-tag>` |
+
+</details>
+
+<details>
+<summary><strong>Provider-specific setup</strong></summary>
+
+- OpenAI / ChatGPT uses your ChatGPT subscription rather than an API key. Connect from
+  **Providers → OAuth providers → OpenAI / ChatGPT → Connect** in the Admin UI
+  and finish signing in through your browser. Restart an already-running agent after connecting.
+- Anthropic uses a separately billed API key. Add it under
+  **Providers → Cloud providers → Anthropic → Configure**, then choose a discovered
+  model. Multi-workspace keys also require `ANTHROPIC_WORKSPACE_ID`.
+- OpenAI API uses a separate Platform API key. Enter it under
+  **Providers → Cloud providers → OpenAI API → Configure**. The model list may
+  include IDs that cannot handle coding requests. Choose a text-generation model.
+- GitHub Copilot uses your signed-in GitHub account and subscription. Install
+  [Copilot CLI 1.0.83](https://github.com/github/copilot-cli/releases/tag/v1.0.83)
+  on PATH, then choose **Providers → OAuth providers → GitHub Copilot → Connect**.
+  Finish signing in, then select a `github_copilot/<model-id>` from the model picker.
+  Available models and quotas depend on your subscription and organization policies.
+  Restart an already-running agent after connecting.
+- Azure OpenAI uses the deployment names from your resource. Set
+  `AZURE_OPENAI_BASE_URL` to its complete v1 endpoint, such as
+  `https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/`, and select a
+  deployment that supports Chat Completions. Enter the deployment name as a
+  custom model slug if it does not appear in the model dropdown.
+- Mistral Codestral uses a separate key from Mistral La Plateforme.
+- Kimi Code subscription keys use `kimi_code/`. Kimi API credit keys use
+  `kimi/`. Kimi Code plans are for personal interactive coding-agent use under
+  [Kimi's community guidelines](https://www.kimi.com/code/docs/en/kimi-code/community-guidelines.html).
+- Alibaba Cloud uses a Model Studio pay-as-you-go key and defaults to Singapore.
+  For another region or workspace, set `ALIBABA_CLOUD_BASE_URL` to its
+  [OpenAI-compatible endpoint](https://www.alibabacloud.com/help/en/model-studio/base-url)
+  ending in `/compatible-mode/v1`. The key and endpoint must use the same region.
+- QwenCloud Coding Plan keys use `qwencloud_coding/`. QwenCloud Token Plan keys
+  use `qwencloud/`. The keys and endpoints are not interchangeable. Coding Plan
+  is for local, personal, interactive coding-agent use under the
+  [Coding Plan terms](https://www.alibabacloud.com/help/en/model-studio/coding-plan).
+- OpenCode Zen and OpenCode Go share `OPENCODE_API_KEY` but use the explicit
+  `opencode_zen/` and `opencode_go/` model prefixes.
+- For Amazon Bedrock, set `BEDROCK_BASE_URL` to the URL for the same region as
+  the API key and select one of the listed models.
+- Vertex AI uses Google Application Default Credentials instead of an API key.
+  Locally, run `gcloud auth application-default login` once. Service-account
+  files and attached service accounts also work. Set `VERTEX_PROJECT_ID`, and
+  optionally change `VERTEX_LOCATION` from its `global` default.
+- Cloudflare requires both its API token and account ID.
+- For Ollama Cloud, use the exact model IDs shown in the model picker. Local
+  Ollama uses the separate `ollama/` prefix.
+- Prefer tool-capable models for coding agents. Local models also need enough context for the agent's system prompt and tool definitions.
+
+</details>
+
+<details>
+<summary><strong>Local provider setup</strong></summary>
+
+FCC automatically discovers models from running local servers at startup. If you start a server later, click **Refresh models** in Admin to add its models to the picker.
+
+### LM Studio
+
+Start LM Studio's local server, load a tool-capable model, and use the model identifier shown by LM Studio with the `lmstudio/` prefix. The default URL is `http://localhost:1234/v1`.
+
+### llama.cpp
+
+Start `llama-server` with its OpenAI-compatible Chat Completions API and enough context for the model. Use the local model ID with the `llamacpp/` prefix. `LLAMACPP_BASE_URL` defaults to `http://localhost:8080/v1`.
+
+### Ollama
 
 ```bash
 ollama pull llama3.1
 ollama serve
 ```
 
-In the Admin UI, keep or update `OLLAMA_BASE_URL`, then set `MODEL` to the same tag shown by `ollama list`, prefixed with `ollama/`.
+Use the tag shown by `ollama list` with the `ollama/` prefix. `OLLAMA_BASE_URL` defaults to `http://localhost:11434`.
 
-`OLLAMA_BASE_URL` is the Ollama server root; do not append `/v1`. Example model slugs include `ollama/llama3.1` and `ollama/llama3.1:8b`.
+Provider cards show the checked endpoint and response time, with a useful message when a local server is unavailable. After starting the server or correcting its settings, click **Test** to refresh its models.
 
-### 18. Mix Providers By Model Tier
+</details>
 
-Each model tier can use a different provider by setting `MODEL_OPUS`, `MODEL_SONNET`, and `MODEL_HAIKU` in the Admin UI. Leave a tier blank to inherit `MODEL`.
+<details>
+<summary><strong>Optional model-tier routing</strong></summary>
 
-For example, you can route Opus to `nvidia_nim/moonshotai/kimi-k2.6`, Sonnet to `open_router/openrouter/free`, Haiku to `lmstudio/qwen3.5-coder`, and keep the fallback `MODEL` on `zai/glm-5.1`.
+`MODEL` is the fallback for every request. Select a model for `MODEL_FABLE`, `MODEL_OPUS`, `MODEL_SONNET`, or `MODEL_HAIKU` to override an individual Claude Code tier. Select **None** to use `MODEL`.
 
-## Connect Claude Code
+In **Admin UI → Model Config**, add **Fallback Models** in the order FCC should try them if the selected model fails. Each fallback has its own reasoning effort: **Inherit**, **Off**, **From client**, **Low**, **Medium**, **High**, **X-High**, or **Max**.
 
-### 1. Claude Code CLI
+Choose a model, effort, and API key number in the bottom row, then click **+**. **Key 1**, **Key 2**, and so on refer to the current numbered keys in that provider's settings. Edit the selections in place, drag the handle to change the order, or click the red trash button to remove a fallback.
 
-For terminal use, prefer the installed launcher:
+**Inherit** keeps the original request's resolved reasoning setting. **From client** uses the effort or token budget sent by your coding agent, bypassing the global or tier setting. You can select the same model with another key number.
 
-```bash
-fcc-claude
-```
+</details>
 
-Keep `fcc-server` running while you work. The Admin UI manages proxy config, restarts the server when runtime settings change, and `fcc-claude` reads the current Admin UI-managed port and auth token every time it starts. It also sets `CLAUDE_CODE_AUTO_COMPACT_WINDOW` to `190000` for auto-compaction.
+<details>
+<summary><strong>Reasoning control</strong></summary>
 
-### 2. VS Code Extension
+Open **Admin UI → Model Config → Model Routing** and choose an effort beside each model. **Default Effort** starts at **From client**. Fable, Opus, Sonnet, and Haiku start at **Inherit**.
 
-Open Settings, search for `claude-code.environmentVariables`, choose **Edit in settings.json**, and add:
+| Selection | Behavior |
+| --- | --- |
+| **From client** | Use the effort sent by your coding agent. If none is sent, keep the provider default. |
+| **Off** | Request reasoning to be disabled. |
+| **Low**, **Medium**, **High**, **X-High**, or **Max** | Override the client with the selected reasoning level. |
+| **Inherit** | Tier overrides use Default Effort. Fallbacks keep the original request's resolved effort. |
 
-```json
-"claudeCode.environmentVariables": [
-  { "name": "ANTHROPIC_BASE_URL", "value": "http://localhost:8082" },
-  { "name": "ANTHROPIC_AUTH_TOKEN", "value": "freecc" },
-  { "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "value": "1" },
-  { "name": "CLAUDE_CODE_AUTO_COMPACT_WINDOW", "value": "190000" }
-]
-```
+</details>
 
-Reload the extension. If the extension shows a login screen, choose the Anthropic Console path once; the local proxy still handles model traffic after the environment variables are active.
+<a id="connect-your-client"></a>
 
-### 3. JetBrains ACP
+## Connect Your Client
 
-Edit the installed Claude ACP config:
+FCC launchers automatically start the server.
 
-- Windows: `C:\Users\%USERNAME%\AppData\Roaming\JetBrains\acp-agents\installed.json`
-- Linux/macOS: `~/.jetbrains/acp.json`
+For editor and app integrations, install the client, start FCC, then open
+**Admin UI → Integrations** and click **Connect** on its card.
 
-Set the environment for `acp.registry.claude-acp`:
+- **Claude Code in VS Code**: Install the [Claude Code extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code).
+- **VS Code Chat**: Install the latest [VS Code](https://code.visualstudio.com/), connect, and select an FCC model in its built-in Chat model picker.
+- **Claude Desktop**: Install [Claude Desktop](https://claude.ai/download). Fully quit it before connecting or disconnecting, then reopen it. Disconnect returns to normal Claude sign-in.
+- **Codex in VS Code and App**: Install the [Codex extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt) or Codex App.
+- **DeepSeek Harness Desktop**: Install and open the app once before connecting. Start a new session to use FCC models.
+- **Claude Code in JetBrains ACP**: Install Claude Agent in JetBrains AI Assistant and start it once, then click **Connect** in FCC. Reopen the IDE, select **Claude Code (FCC)**, and start a new chat. After JetBrains updates the agent, restart FCC before starting a new chat. Requires a local IDE in its standard installation locations.
 
-```json
-"env": {
-  "ANTHROPIC_BASE_URL": "http://localhost:8082",
-  "ANTHROPIC_AUTH_TOKEN": "freecc",
-  "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
-  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "190000"
-}
-```
+Reload VS Code or restart the app/IDE after connecting. In Codex and Claude Desktop, select an FCC
+model from the model picker. Reload or restart the client when FCC reports updated settings. Use
+**Disconnect** on the same card to remove the integration.
 
-Restart the IDE after changing the file.
+To complete Claude Code onboarding separately, open **Admin UI → Integrations →
+Claude Code onboarding** and click **Complete onboarding**. Connecting Claude Code
+in VS Code also completes onboarding.
+
+Run FCC on the same computer and in the same user environment as the client you
+are configuring.
+
+<a id="optional-integrations"></a>
 
 ## Optional Integrations
 
-For every integration below, change **managed proxy settings** only in the **Admin UI** at `/admin`: edit fields, click **Validate**, then **Apply**. The footer shows where the managed config is stored; this README does not walk through editing that file by hand.
+Configure integrations from **Admin UI → Messaging**, then click **Apply**.
 
-### 1. Discord And Telegram Bots
+<details>
+<summary><strong>Discord bot</strong></summary>
 
-The bot wrapper runs Claude Code sessions remotely, streams progress, supports reply-based conversation branches, and can stop or clear tasks.
+1. Create a bot in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Enable **Message Content Intent** and invite it with read, send,
+   message-history, and **Manage Messages** permissions so `/clear` can remove
+   user prompts.
+3. Set **Messaging Platform** to **discord**.
+4. Enter **Discord Bot Token**, **Allowed Discord Channels**, and an absolute **Allowed Directory**.
+5. Apply the settings and restart the server if requested.
 
-**Discord**
+</details>
 
-1. Create the bot in the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Enable **Message Content Intent**.
-3. Invite the bot with read, send, and message history permissions.
-4. Copy the bot token and the numeric channel ID (or IDs) where the bot should respond.
+<details>
+<summary><strong>Telegram bot</strong></summary>
 
-**Telegram**
+1. Create a bot with [@BotFather](https://t.me/BotFather).
+2. Get your numeric user ID from [@userinfobot](https://t.me/userinfobot).
+   In groups, grant the bot permission to delete messages.
+3. Set **Messaging Platform** to **telegram**.
+4. Enter **Telegram Bot Token**, **Allowed Telegram User ID**, and an absolute **Allowed Directory**.
+5. Apply the settings and restart the server if requested.
 
-1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the bot token.
-2. Get your numeric user ID from [@userinfobot](https://t.me/userinfobot) so only you can use the bot.
+</details>
 
-**Configure in the Admin UI**
+### Messaging commands
 
-1. With `fcc-server` running, open the **Admin UI** URL from the terminal output.
-2. In the sidebar, choose **Messaging**.
-3. Set **Messaging Platform** to **discord** or **telegram**.
-4. For Discord, paste **Discord Bot Token** and **Allowed Discord Channels**. For Telegram, paste **Telegram Bot Token** and **Allowed Telegram User ID**.
-5. Set **Allowed Directory** to an absolute path on the machine running the proxy—the workspace root the bot may use.
-6. Click **Validate**, then **Apply**. Restart the server if the UI says one is required.
+| Usage | Behavior |
+| --- | --- |
+| `/stats` | Show session state. |
+| Standalone `/stop` | Cancel all work. |
+| Reply with `/stop` | Cancel only the selected request while other queued requests continue. |
+| Standalone `/clear` | Clear all FCC conversations and their messages in this chat. |
+| Reply with `/clear` | Delete the selected message and the chain of replies to it. Keep other conversations. |
 
-<div align="center">
-  <img src="assets/admin-messaging.png" alt="Admin UI Messaging view with bot and voice settings" width="700">
-</div>
+<details>
+<summary><strong>Voice notes</strong></summary>
 
-<p align="center"><em>Admin UI → Messaging (platform, bots, and Voice)</em></p>
+NVIDIA NIM transcription support is included in every installation. In **Admin UI → Messaging → Voice**, enable voice notes, select `nvidia_nim`, and choose a supported model. Configure your **NVIDIA NIM API key** on the Providers page.
 
-**Useful commands**
+For local Whisper on CPU or CUDA, re-run the installer with the local voice option:
 
-- `/stop` cancels a task; reply to a task message to stop only that branch.
-- `/clear` resets sessions; reply to clear one branch.
-- `/stats` shows session state.
+macOS/Linux:
 
-### 2. Voice Notes
+Local Whisper on CPU or CUDA:
 
-Voice notes work on Discord and Telegram after you extend your [Free Claude Code install](#1-fast-install) with the matching optional extras.
+```bash
+curl -fsSL "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.sh" | sh -s -- --voice-local
+```
+
+Local Whisper with CUDA 13.0:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.sh" | sh -s -- --voice-local --torch-backend cu130
+```
+
+Windows PowerShell:
+
+Local Whisper on CPU or CUDA:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.ps1"))) -VoiceLocal
+```
+
+Local Whisper with CUDA 13.0:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install.ps1"))) -VoiceLocal -TorchBackend cu130
+```
+
+After installing local support, restart `fcc-server`. In **Admin UI → Messaging → Voice**, enable voice notes, select `cpu` or `cuda`, and choose the Whisper model. Local gated models need `HUGGINGFACE_API_KEY`.
+
+</details>
+
+## Manage Your Installation
+
+Run `fcc-server --version` to check the installed version without starting FCC.
+
+### Update
+
+Stop all running FCC commands, then run:
+
+```sh
+fcc-update
+```
+
+The update installs the checked stable FCC release with its matching installer.
+
+To reinstall FCC or change optional components while already up to date, run the [installer](#install) directly.
+
+For local voice support, include `--voice-local` (macOS/Linux) or `-VoiceLocal` (Windows), plus your `--torch-backend` or `-TorchBackend` option if used.
+
+### Muse Code on native Windows
+
+To install or update only Muse Code:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/install-muse.ps1")))
+```
+
+To remove the Muse Code copy installed by FCC, keeping its data:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/uninstall-muse.ps1")))
+```
+
+Uninstalling FCC leaves Muse Code installed.
+
+### Uninstall
+
+Stop every running FCC command and quit connected desktop/editor apps before uninstalling.
+
+**Removes**
+
+- Free Claude Code, including its desktop launcher and commands
+- `~/.fcc/`
+
+**Keeps**
+
+- uv and Python
+- Your coding agents, RTK, and Headroom
 
 macOS/Linux:
 
 ```bash
-# NVIDIA NIM transcription (Riva gRPC)
-curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh -s -- --voice-nim
-
-# Local Whisper (CPU or CUDA)
-curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh -s -- --voice-local
-
-# Both backends
-curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh -s -- --voice-all
-
-# Local Whisper with CUDA
-curl -fsSL "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.sh?raw=1" | sh -s -- --voice-local --torch-backend cu130
+curl -fsSL "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/uninstall.sh" | sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-# NVIDIA NIM transcription (Riva gRPC)
-& ([scriptblock]::Create((irm "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1?raw=1"))) -VoiceNim
-
-# Local Whisper (CPU or CUDA)
-& ([scriptblock]::Create((irm "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1?raw=1"))) -VoiceLocal
-
-# Both backends
-& ([scriptblock]::Create((irm "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1?raw=1"))) -VoiceAll
-
-# Local Whisper with CUDA
-& ([scriptblock]::Create((irm "https://github.com/Alishahryar1/free-claude-code/blob/main/scripts/install.ps1?raw=1"))) -VoiceLocal -TorchBackend cu130
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/Alishahryar1/free-claude-code/main/scripts/uninstall.ps1")))
 ```
 
-Restart `fcc-server` after reinstalling.
+## Project Links
 
-In the **Admin UI**, open **Messaging** and scroll to **Voice**. Turn on **Voice Notes**, choose **Whisper Device** (`cpu`, `cuda`, or `nvidia_nim`), set **Whisper Model**, and enter **Hugging Face Token** when your setup needs it. For **nvidia_nim** transcription, install the `voice` extra and set **NVIDIA NIM API Key** on the **Providers** view. The screenshot above shows the **Voice** block in the same view.
-
-## How It Works
-
-<div align="center">
-  <img src="assets/how-it-works.svg" alt="Free Claude Code request flow architecture" width="900">
-</div>
-
-Diagram source: [`assets/how-it-works.mmd`](assets/how-it-works.mmd).
-
-Important pieces:
-
-- FastAPI exposes Anthropic-compatible routes such as `/v1/messages`, `/v1/messages/count_tokens`, and `/v1/models`.
-- Model routing resolves the Claude model name to `MODEL_OPUS`, `MODEL_SONNET`, `MODEL_HAIKU`, or `MODEL`.
-- NIM, OpenCode Zen, and OpenCode Go use OpenAI chat streaming translated into Anthropic SSE.
-- Wafer, OpenRouter, DeepSeek, Kimi, Fireworks AI, Z.ai, LM Studio, llama.cpp, and Ollama use Anthropic Messages style transports where applicable (with provider-specific quirks and model-list URLs).
-- The proxy normalizes thinking blocks, tool calls, token usage metadata, and provider errors into the shape Claude Code expects.
-- Request optimizations answer trivial Claude Code probes locally to save latency and quota.
-
-## Development
-
-### 1. Project Structure
-
-```text
-free-claude-code/
-├── server.py              # ASGI entry point
-├── api/                   # FastAPI routes, service layer, routing, optimizations
-├── core/                  # Shared Anthropic protocol helpers and SSE utilities
-├── providers/             # Provider transports, registry, rate limiting
-├── messaging/             # Discord/Telegram adapters, sessions, voice
-├── cli/                   # Package entry points and Claude process management
-├── config/                # Settings, provider catalog, logging
-└── tests/                 # Unit and contract tests
-```
-
-### 2. Run From Source
-
-Use this path if you are developing or want to run directly from a checkout:
+For a problem after installation, run the command below and paste its output into your bug report.
 
 ```bash
-git clone https://github.com/Alishahryar1/free-claude-code.git
-cd free-claude-code
-uv run uvicorn server:app --host 0.0.0.0 --port 8082
+fcc-doctor
 ```
 
-### 3. Commands
-
-```bash
-uv run ruff format
-uv run ruff check
-uv run ty check
-uv run pytest
-```
-
-Run them in that order before pushing. CI enforces the same checks.
-
-### 4. Package Scripts
-
-`pyproject.toml` installs:
-
-- `fcc-server`: starts the proxy with configured host and port.
-- `fcc-init`: optional advanced scaffold for `~/.fcc/.env`; prefer the **Admin UI** for normal configuration.
-- `fcc-claude`: launches Claude Code with the configured local proxy URL, auth token, model discovery flag, and a 190k `CLAUDE_CODE_AUTO_COMPACT_WINDOW` for auto-compaction.
-- `free-claude-code`: compatibility alias for `fcc-server`.
-
-### 5. Extending
-
-- Add OpenAI-compatible providers by extending `OpenAIChatTransport`.
-- Add Anthropic Messages providers by extending `AnthropicMessagesTransport`.
-- Register provider metadata in `config.provider_catalog` and factory wiring in `providers.registry`.
-- Add messaging platforms by implementing the `MessagingPlatform` interface in `messaging/`.
-
-## Contributing
-
-- [`.env.example`](.env.example) lists env key names as a read-only reference for contributors; use the **Admin UI** to change managed proxy settings.
-- Report bugs and feature requests in [Issues](https://github.com/Alishahryar1/free-claude-code/issues). For bug always include all model mapping, current model when issue occured and the issue string
-- Keep changes small and covered by focused tests.
-- Do not open Docker integration PRs.
-- Do not open README change PRs just open an issue for it.
-- Run the full check sequence before opening a pull request.
-- The syntax `except X, Y` is brought back in python 3.14 final version (not in 3.14 alpha). Keep in mind before opening PRs.
+- [Report bugs or request features](https://github.com/Alishahryar1/free-claude-code/issues)
+- [Contributing guide](CONTRIBUTING.md)
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+GNU Affero General Public License version 3 only (`AGPL-3.0-only`). See [LICENSE](LICENSE) for details.
